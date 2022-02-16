@@ -7,28 +7,31 @@
 #include <pthread.h>
 #include <time.h>
 
-#define BCM2708_PERI_BASE        0x3F000000
-#define GPIO_BASE                (BCM2708_PERI_BASE + 0x200000) /* GPIO controller */
+#define BCM2708_PERI_BASE 0x3F000000
+#define GPIO_BASE (BCM2708_PERI_BASE + 0x200000) /* GPIO controller */
 
-#define PAGE_SIZE  (4 * 1024)
+#define PAGE_SIZE (4 * 1024)
 #define BLOCK_SIZE (4 * 1024)
 
 #define DHT_PIN 4
+#define DHT11_TIMEOUT UINT32_MAX
 
-int  mem_fd;
+int mem_fd;
 void *gpio_map;
 
 /* I/O access */
 volatile unsigned *gpio;
 
 /* GPIO setup macros. Always use INP_GPIO(x) before using OUT_GPIO(x) or SET_GPIO_ALT(x,y) */
-#define INP_GPIO(g) *(gpio+((g)/10)) &= ~(7<<(((g)%10)*3))
-#define OUT_GPIO(g) *(gpio+((g)/10)) |=  (1<<(((g)%10)*3))
-#define GET_GPIO(g) (*(gpio+13)&(1<<g))
-#define SET_GPIO_ALT(g,a) *(gpio+(((g)/10))) |= (((a)<=3?(a)+4:(a)==4?3:2)<<(((g)%10)*3))
+#define INP_GPIO(g) *(gpio + ((g) / 10)) &= ~(7 << (((g) % 10) * 3))
+#define OUT_GPIO(g) *(gpio + ((g) / 10)) |= (1 << (((g) % 10) * 3))
+#define GET_GPIO(g) (*(gpio + 13) & (1 << g))
+#define SET_GPIO_ALT(g, a) *(gpio + (((g) / 10))) |= (((a) <= 3 ? (a) + 4 : (a) == 4 ? 3  \
+                                                                                     : 2) \
+                                                      << (((g) % 10) * 3))
 
-#define GPIO_SET *(gpio+7)   /* sets   bits which are 1 ignores bits which are 0 */
-#define GPIO_CLR *(gpio+10)  /* clears bits which are 1 ignores bits which are 0 */
+#define GPIO_SET *(gpio + 7)  /* sets   bits which are 1 ignores bits which are 0 */
+#define GPIO_CLR *(gpio + 10) /* clears bits which are 1 ignores bits which are 0 */
 
 /**
  * Set up a memory regions to access GPIO
@@ -36,42 +39,44 @@ volatile unsigned *gpio;
  */
 void *mulitThread(void *argu)
 {
-        int i=0;
+        int i = 0;
         INP_GPIO(2);
         printf("No.2 thread start.\n");
-        for(i=0;i<30;i++)
+        for (i = 0; i < 30; i++)
         {
                 OUT_GPIO(2);
                 GPIO_SET = 1 << 2;
-                sleep(1);       
+                sleep(1);
                 GPIO_CLR = 1 << 2;
                 sleep(1);
-                printf("No.2:Flash %d",i);
+                printf("No.2:Flash %d", i);
         }
         pthread_exit(NULL);
 }
- 
+
 void setup_io()
 {
         /* open /dev/mem */
-        if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
+        if ((mem_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0)
+        {
                 printf("can't open /dev/mem \n");
                 exit(-1);
         }
 
         /* mmap GPIO */
         gpio_map = mmap(
-                NULL,             /* Any adddress in our space will do */
-                BLOCK_SIZE,       /* Map length */
-                PROT_READ|PROT_WRITE, /* Enable reading & writting to mapped memory */
-                MAP_SHARED,       /* Shared with other processes */
-                mem_fd,           /* File to map */
-                GPIO_BASE         /* Offset to GPIO peripheral */
-                );
+            NULL,                   /* Any adddress in our space will do */
+            BLOCK_SIZE,             /* Map length */
+            PROT_READ | PROT_WRITE, /* Enable reading & writting to mapped memory */
+            MAP_SHARED,             /* Shared with other processes */
+            mem_fd,                 /* File to map */
+            GPIO_BASE               /* Offset to GPIO peripheral */
+        );
 
         close(mem_fd); /* No need to keep mem_fd open after mmap */
 
-        if (gpio_map == MAP_FAILED) {
+        if (gpio_map == MAP_FAILED)
+        {
                 printf("mmap error %d\n", (int)gpio_map); /* errno also set! */
                 exit(-1);
         }
@@ -80,18 +85,21 @@ void setup_io()
         gpio = (volatile unsigned *)gpio_map;
 }
 
-void CreatWave(int status,double time)
+void CreatWave(int status, double time)
 {
-        
 }
 
-uint16_t readWave(uint8_t pin,bool target)
+uint16_t readWave(uint8_t pin, bool target)
 {
         uint16_t count - 0;
-        while(GET_GPIO(pin) == target)
+        while (GET_GPIO(pin) == target)
         {
-                
+                if (count++ > DHT11_TIMEOUT)
+                {
+                        return DHT11_TIMEOUT;
+                }
         }
+        return count;
 }
 
 int main(int argc, char **argv)
@@ -101,13 +109,9 @@ int main(int argc, char **argv)
         /* Set up gpi pointer for direct register access */
         setup_io();
 
-                
-        
-        //pthread_create(&thread1,NULL,&mulitThread,NULL);
+        // pthread_create(&thread1,NULL,&mulitThread,NULL);
         /* Must use INP_GPIO before we can use OUT_GPIO */
-        
-        
-        
+
         printf("No.1 thread start.\n");
         INP_GPIO(4);
         /*
@@ -118,20 +122,20 @@ int main(int argc, char **argv)
                 //usleep(1)     //delay 1us
                 //nanosleep(1)  //delay 1ns
                 sleep(1);       //delay 1s
-                
+
                 GPIO_CLR = 1 << 4;
-                
-                
+
+
                 sleep(1);
         }
         */
-        
+
         OUT_GPIO(4);
-        GPIO_SET = 1<<4;
-        GPIO_CLR = 1<<4;
-        usleep(18000);  //1. LOW 18ms
-        GPIO_SET = 1<<4;
-        usleep(30);     //2. HIGH 20~40us
+        GPIO_SET = 1 << 4;
+        GPIO_CLR = 1 << 4;
+        usleep(18000); // 1. LOW 18ms
+        GPIO_SET = 1 << 4;
+        usleep(30); // 2. HIGH 20~40us
         /*
         while(1)
         {
@@ -147,10 +151,10 @@ int main(int argc, char **argv)
                 GPIO_SET = 1<<4;
                 usleep(100000);
                 GPIO_CLR = 1<<4;
-                usleep(100000); 
+                usleep(100000);
                 */
         //}
-        
-        //pthread_join(thread1,NULL);
+
+        // pthread_join(thread1,NULL);
         return 0;
 }
