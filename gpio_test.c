@@ -89,7 +89,7 @@ void CreatWave(int status, double time)
 {
 }
 
-uint16_t readWave(uint8_t pin, bool target)
+u_int16_t readWave(u_int8_t pin, bool target)
 {
         uint16_t count - 0;
         while (GET_GPIO(pin) == target)
