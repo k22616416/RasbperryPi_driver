@@ -14,7 +14,7 @@
 #define BLOCK_SIZE (4 * 1024)
 
 #define DHT_PIN 4
-#define DHT11_TIMEOUT UINT32_MAX
+#define DHT11_TIMEOUT UINT_MAX
 
 int mem_fd;
 void *gpio_map;
@@ -89,9 +89,10 @@ void CreatWave(int status, double time)
 {
 }
 
-u_int16_t readWave(u_int8_t pin, bool target)
+u_int16_t readWave(u_int8_t pin, u_int8_t target)
 {
-        uint16_t count - 0;
+        u_int16_t count = 0;
+        u_int8_t force = !!target;
         while (GET_GPIO(pin) == target)
         {
                 if (count++ > DHT11_TIMEOUT)
@@ -136,24 +137,19 @@ int main(int argc, char **argv)
         usleep(18000); // 1. LOW 18ms
         GPIO_SET = 1 << 4;
         usleep(30); // 2. HIGH 20~40us
-        /*
-        while(1)
+
+        while (1)
         {
-                if(GET_GPIO(4))
+                i = GET_GPIO(4);
+                if (i)
                 {
-                        printf("Port 4 is High\n");
+                        printf("Port 4 is %d\n", i);
                 }
                 else
                 {
                         printf("Port 4 is Low\n");
                 }
-                /*
-                GPIO_SET = 1<<4;
-                usleep(100000);
-                GPIO_CLR = 1<<4;
-                usleep(100000);
-                */
-        //}
+        }
 
         // pthread_join(thread1,NULL);
         return 0;
