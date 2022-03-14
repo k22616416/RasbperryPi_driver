@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <time.h>
+#include <limits.h>
 
 #define BCM2708_PERI_BASE 0x3F000000
 #define GPIO_BASE (BCM2708_PERI_BASE + 0x200000) /* GPIO controller */
@@ -93,11 +94,11 @@ u_int16_t readWave(u_int8_t pin, u_int8_t target)
 {
         u_int16_t count = 0;
         u_int8_t force = !!target;
-        while (GET_GPIO(pin) == target)
+        while ((!!GET_GPIO(pin)) == force)
         {
                 if (count++ > DHT11_TIMEOUT)
                 {
-                        return DHT11_TIMEOUT;
+                        return (u_int16_t)DHT11_TIMEOUT;
                 }
         }
         return count;
@@ -113,7 +114,6 @@ int main(int argc, char **argv)
         // pthread_create(&thread1,NULL,&mulitThread,NULL);
         /* Must use INP_GPIO before we can use OUT_GPIO */
 
-        printf("No.1 thread start.\n");
         INP_GPIO(4);
         /*
         for(i=0;i<10;i++)
@@ -138,18 +138,13 @@ int main(int argc, char **argv)
         GPIO_SET = 1 << 4;
         usleep(30); // 2. HIGH 20~40us
 
-        while (1)
-        {
-                i = GET_GPIO(4);
-                if (i)
-                {
-                        printf("Port 4 is %d\n", i);
-                }
-                else
-                {
-                        printf("Port 4 is Low\n");
-                }
-        }
+        // while (1)
+        // {
+        //         i = GET_GPIO(4);
+
+        //         printf("Port 4 is %d\n", i);
+        //         sleep(1);
+        // }
 
         // pthread_join(thread1,NULL);
         return 0;
